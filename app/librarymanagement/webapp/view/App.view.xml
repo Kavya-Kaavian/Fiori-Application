@@ -1,0 +1,64 @@
+<mvc:View 
+    controllerName="librarymanagement.controller.App" 
+    xmlns:mvc="sap.ui.core.mvc" 
+    xmlns="sap.m"
+    xmlns:form="sap.ui.layout.form">
+
+    <App id="app">
+        <Page id="pages" title="Library Management">
+            <content>
+                <Button icon="sap-icon://add" tooltip="Create" visible="true" press=".onOpenAddDialog" id="addButton"/>
+                <Button icon="sap-icon://delete" tooltip="Delete" visible="true" press="onDelete" id="deleteButton"/> 
+                <Button icon="sap-icon://edit" tooltip="Edit" visible="true" press="onEditMode" id="editModeButton"/>
+                <Button text="Save" type="Emphasized" visible="false" enabled="true" press="onSave" id="saveButton"/>
+                
+                <Table id="bookTable" items="{/Books}" mode="SingleSelectLeft">
+                    <columns>
+                        <Column id="colID">
+                            <Text text="BookId" id="Text1"/>
+                        </Column>
+                        <Column id="colTitle">
+                            <Text text="Title" id="Text2"/>
+                        </Column>
+                        <Column id="colAuthor">
+                            <Text text="Author" id="Text3"/>
+                        </Column>
+                        <Column id="colStatus">
+                            <Text text="Status" id="Text4"/>
+                        </Column>
+                    </columns>
+                    <items>
+                        <ColumnListItem id="columnListItem">
+                            <cells>
+                                <Text text="{bookid}" id="text5" />
+                                <Text text="{title}" id="text6"/>
+                                <Text text="{author}" id="text7"/>
+                                <Text text="{status}" id="text8"/>
+                            </cells>
+                        </ColumnListItem>
+                    </items>
+                </Table>
+            </content>
+            <dependents>
+                <Dialog id="OpenDialog" title="Create Book">
+                    <buttons>
+                        <Button id="confirmCreate" text="Create" press=".onCreateBook" type="Emphasized" />
+                        <Button id="cancelCreate" text="Cancel" press=".onCancelDialog" type="Transparent" />
+                    </buttons>
+                    <form:SimpleForm editable="true" layout="ResponsiveGridLayout" id="SimpleForm">
+                        <form:content>
+                            <Label text="Book ID" required="true" id="label1"/>
+                            <Input id="idBookId" />
+                            <Label text="Title" required="true" id="label2"/>
+                            <Input id="idTitle" />
+                            <Label text="Author" required="true" id="label3"/>
+                            <Input id="idAuthor" />
+                            <Label text="Status" required="true" id="label4"/>
+                            <Input id="idStatus" />
+                        </form:content>
+                    </form:SimpleForm>
+                </Dialog>
+            </dependents>
+        </Page>
+    </App>
+</mvc:View>
