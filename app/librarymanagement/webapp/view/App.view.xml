@@ -11,6 +11,8 @@
                 <Button icon="sap-icon://delete" tooltip="Delete" visible="true" press="onDelete" id="deleteButton"/> 
                 <Button icon="sap-icon://edit" tooltip="Edit" visible="true" press="onEditMode" id="editModeButton"/>
                 <Button text="Save" type="Emphasized" visible="false" enabled="true" press="onSave" id="saveButton"/>
+
+                <Button icon="sap-icon://upload" tooltip="Migrate" visible="true" press="onMigrateAllBooks" id="migrateButton"/>
                 
                 <Table id="bookTable" items="{/Books}" mode="SingleSelectLeft">
                     <columns>
