@@ -6,9 +6,8 @@ module.exports = cds.service.impl(async function() {
     this.on('migrateAllBooks', async (req) => {
         const { bookid } = req.data;
         if (!bookid) {
-            return "Book ID is required for migration.";
+            return "Book ID is required for migration";
         }
-
         try {
             const booksToMigrate = await SELECT.one.from(Books).where({ bookid });
 
@@ -18,10 +17,9 @@ module.exports = cds.service.impl(async function() {
 
             await INSERT.into(MigratedBooks).entries({
                 bookid: booksToMigrate.bookid,
-                title: booksToMigrate.title,
+                title:  booksToMigrate.title,
                 author: booksToMigrate.author,
-                price: booksToMigrate.price,
-                migratedAt: new Date()
+                status: booksToMigrate.status,
             });
 
             return `Successfully migrated book with ID ${bookid}`;

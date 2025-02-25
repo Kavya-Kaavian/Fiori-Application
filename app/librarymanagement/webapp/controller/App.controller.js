@@ -11,7 +11,7 @@ sap.ui.define([
             this.oEditableTemplate = new sap.m.ColumnListItem({
                 cells: [
                     new sap.m.Input({ value: "{bookid}", change: [this.onInputChange, this] }),
-                    new sap.m.Input({ value: "{title}", change: [this.onInputChange, this] }),
+                    new sap.m.Input({ value: "{title}",  change: [this.onInputChange, this] }),
                     new sap.m.Input({ value: "{author}", change: [this.onInputChange, this] }),
                     new sap.m.Input({ value: "{status}", change: [this.onInputChange, this] })
                 ]
@@ -51,17 +51,17 @@ sap.ui.define([
 
             oContext.created()
                 .then(() => {
-                    MessageToast.show("Book created successfully!");
                     this.getView().byId("OpenDialog").close();
                     this._oTable.getBinding("items").refresh();
                     this.submitChanges();
+                    MessageToast.show("Book created successfully!");
                 })
-                .catch(() => {
-                    MessageToast.show("Error creating book");
-                });
+                // .catch(() => {
+                //     MessageToast.show("Error");
+                // });
         },
 
-        onMigrateAllBooks: function () {
+         async onMigrateAllBooks() {
             var oTable = this.byId("bookTable");
             var oSelected = oTable.getSelectedItem();
         
@@ -77,19 +77,36 @@ sap.ui.define([
             }
         
             var oData = oContext.getObject();
-            console.log(oData); 
-            var that = this;
-            axios.post("/odata/v4/library/migrateAllBooks", { bookid: oData.bookid })
-                .then(function (response) {
+            var oModel=this.getView().getModel();
+            console.log(oData);
+            try{
+                var oActionODataContextBinding=oModel.bindContext("/migrateAllBooks(...)");//binds action with migrateallbooks this happen in backend
+                oActionODataContextBinding.setParameter("bookid",oData.bookid);//send bookid as parameter for migration action
+
+                await oActionODataContextBinding.execute();// wait for migration to complelete and calls the backend to execute migration
+                var oActionContext=oActionODataContextBinding.getBoundContext();//retrieve the response of the exxcuted action
+
+                MessageToast.show(oActionContext.getObject().value);//get response message from backend
+                console.table(oActionContext.getObject().value);
+
+                oModel.refresh();//refresh the model to check updated data is displayed
+            }
+            catch(error){
+                MessageToast.show("Error:"+error.message);
+                console.error("Migration Error:",error);
+            }
+            // var that = this;
+            // axios.post("/odata/v4/library/migrateAllBooks", { bookid: oData.bookid })
+            //     .then(function (response) {
                 
-                    MessageToast.show(response.data.value);
-                    console.log("Migration Response:", response.data);
-                    that.getView().getModel().refresh();
-                })
-                .catch(function (error) {
-                    MessageToast.show("Error: " + error.message);
-                    console.error("Migration Error:", error);
-                });
+            //         MessageToast.show(response.data.value);
+            //         console.log("Migration Response:", response.data);
+            //         that.getView().getModel().refresh();
+            //     })
+            //     .catch(function (error) {
+            //         MessageToast.show("Error: " + error.message);
+            //         console.error("Migration Error:", error);
+            //     });
         },                                     
 
         onEditMode: function () {
