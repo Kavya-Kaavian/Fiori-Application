@@ -1,123 +1,171 @@
 sap.ui.define([
-  "sap/ui/core/mvc/Controller",
-  "sap/m/MessageToast"
-], (BaseController, MessageToast) => {
-  "use strict";
+    "sap/ui/core/mvc/Controller",
+    "sap/m/MessageToast"
+], function (BaseController, MessageToast) {
+    "use strict";
 
-  return BaseController.extend("librarymanagement.controller.App", {
-      onInit() {
-          this._oTable = this.byId("bookTable");
+    return BaseController.extend("librarymanagement.controller.App", {
+        onInit() {
+            this._oTable = this.byId("bookTable");
 
-          this.oEditableTemplate = new sap.m.ColumnListItem({
-              cells: [
-                  new sap.m.Input({ value: "{bookid}", change: [this.onInputChange, this] }),
-                  new sap.m.Input({ value: "{title}", change: [this.onInputChange, this] }),
-                  new sap.m.Input({ value: "{author}", change: [this.onInputChange, this] }),
-                  new sap.m.Input({ value: "{status}", change: [this.onInputChange, this] })
-              ]
-          });
-      },
+            this.oEditableTemplate = new sap.m.ColumnListItem({
+                cells: [
+                    new sap.m.Input({ value: "{bookid}", change: [this.onInputChange, this] }),
+                    new sap.m.Input({ value: "{title}",  change: [this.onInputChange, this] }),
+                    new sap.m.Input({ value: "{author}", change: [this.onInputChange, this] }),
+                    new sap.m.Input({ value: "{status}", change: [this.onInputChange, this] })
+                ]
+            });
+        },
 
-      onOpenAddDialog: function() {
-          this.getView().byId("OpenDialog").open();
-      },
+        onOpenAddDialog: function () {
+            this.getView().byId("OpenDialog").open();
+        },
 
-      onCancelDialog: function(oEvent) {
-          oEvent.getSource().getParent().close();
-      },
+        onCancelDialog: function (oEvent) {
+            oEvent.getSource().getParent().close();
+        },
 
-      onCreateBook: function() {
-          var oBookId = this.getView().byId("idBookId").getValue();
+        onCreateBook: function () {
+            var oBookId = this.getView().byId("idBookId").getValue();
 
-          if (!oBookId || isNaN(oBookId)) {
-              MessageToast.show("Book ID must be a valid integer");
-              return;
-          }
+            if (!oBookId || isNaN(oBookId)) {
+                MessageToast.show("Book ID must be a valid integer");
+                return;
+            }
 
-          const oTable = this.getView().byId("bookTable");
-          const oBinding = oTable.getBinding("items");
+            const oTable = this.getView().byId("bookTable");
+            const oBinding = oTable.getBinding("items");
 
-          if (!oBinding) {
-              MessageToast.show("Data binding is not available!");
-              return;
-          }
+            if (!oBinding) {
+                MessageToast.show("Data binding is not available!");
+                return;
+            }
 
-          const oContext = oBinding.create({
-              "bookid": parseInt(oBookId, 10),
-              "title": this.byId("idTitle").getValue(),
-              "author": this.byId("idAuthor").getValue(),
-              "status": this.byId("idStatus").getValue()
-          });
+            const oContext = oBinding.create({
+                "bookid": parseInt(oBookId, 10),
+                "title": this.byId("idTitle").getValue(),
+                "author": this.byId("idAuthor").getValue(),
+                "status": this.byId("idStatus").getValue()
+            });
 
-          oContext.created()
-              .then(() => {
-                  MessageToast.show("Book created successfully!");
-                  this.getView().byId("OpenDialog").close();
-                  this._oTable.getBinding("items").refresh(); 
-                  this.submitChanges(); 
-              })
-              .catch(() => {
-                  MessageToast.show("Error creating book");
-              });
-      },
+            oContext.created()
+                .then(() => {
+                    this.getView().byId("OpenDialog").close();
+                    this._oTable.getBinding("items").refresh();
+                    this.submitChanges();
+                    MessageToast.show("Book created successfully!");
+                })
+                // .catch(() => {
+                //     MessageToast.show("Error");
+                // });
+        },
 
-      onEditMode: function() {
-          this.byId("editModeButton").setVisible(false);
-          this.byId("saveButton").setVisible(true);
-          this.byId("deleteButton").setVisible(true);
-          this.rebindTable(this.oEditableTemplate, "Edit");
-      },
+         async onMigrateAllBooks() {
+            var oTable = this.byId("bookTable");
+            var oSelected = oTable.getSelectedItem();
+        
+            if (!oSelected) {
+                MessageToast.show("Please select a record to migrate");
+                return;
+            }
+            var oContext = oSelected.getBindingContext(); 
+        
+            if (!oContext) {
+                MessageToast.show("No binding context found!");
+                return;
+            }
+        
+            var oData = oContext.getObject();
+            var oModel=this.getView().getModel();
+            console.log(oData);
+            try{
+                var oActionODataContextBinding=oModel.bindContext("/migrateAllBooks(...)");//binds action with migrateallbooks this happen in backend
+                oActionODataContextBinding.setParameter("bookid",oData.bookid);//send bookid as parameter for migration action
 
-      onDelete: function() {
-          var oSelected = this.byId("bookTable").getSelectedItem();
-          if (!oSelected) {
-              MessageToast.show("Please select a row to delete.");
-              return;
-          }
+                await oActionODataContextBinding.execute();// wait for migration to complelete and calls the backend to execute migration
+                var oActionContext=oActionODataContextBinding.getBoundContext();//retrieve the response of the exxcuted action
 
-          var oBookId = oSelected.getBindingContext().getObject().bookid;
-          oSelected.getBindingContext().delete("$auto").then(() => {
-              MessageToast.show(oBookId + " successfully deleted.");
-          }).catch((oError) => {
-              MessageToast.show("Deletion Error: " + oError.message);
-          });
-      },
+                MessageToast.show(oActionContext.getObject().value);//get response message from backend
+                console.table(oActionContext.getObject().value);
 
-      rebindTable: function(oTemplate, sKeyboardMode) {
-          this._oTable.bindItems({
-              path: "/Books",
-              template: oTemplate,
-              templateShareable: true
-          }).setKeyboardMode(sKeyboardMode);
-      },
+                oModel.refresh();//refresh the model to check updated data is displayed
+            }
+            catch(error){
+                MessageToast.show("Error:"+error.message);
+                console.error("Migration Error:",error);
+            }
+            // var that = this;
+            // axios.post("/odata/v4/library/migrateAllBooks", { bookid: oData.bookid })
+            //     .then(function (response) {
+                
+            //         MessageToast.show(response.data.value);
+            //         console.log("Migration Response:", response.data);
+            //         that.getView().getModel().refresh();
+            //     })
+            //     .catch(function (error) {
+            //         MessageToast.show("Error: " + error.message);
+            //         console.error("Migration Error:", error);
+            //     });
+        },                                     
 
-      onInputChange: function() {
-          this.refreshModel();
-      },
+        onEditMode: function () {
+            this.byId("editModeButton").setVisible(false);
+            this.byId("saveButton").setVisible(true);
+            this.byId("deleteButton").setVisible(true);
+            this.rebindTable(this.oEditableTemplate, "Edit");
+        },
 
-      refreshModel: function() {
-          return new Promise((resolve, reject) => {
-              this.makeChangesAndSubmit(resolve, reject);
-          });
-      },
+        onDelete: function () {
+            var oSelected = this.byId("bookTable").getSelectedItem();
+            if (!oSelected) {
+                MessageToast.show("Please select a row to delete.");
+                return;
+            }
 
-      makeChangesAndSubmit: function(resolve, reject) {
-          const oModel = this.getView().getModel();
-          const sGroup = "$auto";
+            var oBookId = oSelected.getBindingContext().getObject().bookid;
+            oSelected.getBindingContext().delete("$auto").then(() => {
+                MessageToast.show(oBookId + " successfully deleted.");
+            }).catch((oError) => {
+                MessageToast.show("Deletion Error: " + oError.message);
+            });
+        },
 
-          if (oModel.hasPendingChanges(sGroup)) {
-              oModel.submitBatch(sGroup)
-                  .then(() => {
-                      MessageToast.show("Record updated successfully");
-                      resolve();
-                  })
-                  .catch((err) => {
-                      MessageToast.show("Something went wrong: " + err.message);
-                      reject(err);
-                  });
-          } else {
-              resolve();
-          }
-      }
-  });
+        rebindTable: function (oTemplate, sKeyboardMode) {
+            this._oTable.bindItems({
+                path: "/Books",
+                template: oTemplate,
+                templateShareable: true
+            }).setKeyboardMode(sKeyboardMode);
+        },
+
+        onInputChange: function () {
+            this.refreshModel();
+        },
+
+        refreshModel: function () {
+            return new Promise((resolve, reject) => {
+                this.makeChangesAndSubmit(resolve, reject);
+            });
+        },
+
+        makeChangesAndSubmit: function (resolve, reject) {
+            const oModel = this.getView().getModel();
+            const sGroup = "$auto";
+
+            if (oModel.hasPendingChanges(sGroup)) {
+                oModel.submitBatch(sGroup)
+                    .then(() => {
+                        MessageToast.show("Record updated successfully");
+                        resolve();
+                    })
+                    .catch((err) => {
+                        MessageToast.show("Something went wrong: " + err.message);
+                        reject(err);
+                    });
+            } else {
+                resolve();
+            }
+        }
+    });
 });
